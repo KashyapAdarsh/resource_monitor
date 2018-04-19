@@ -1,0 +1,4 @@
+build:
+	docker image build -t hackathon-flask:latest .
+run: build
+	docker container run --rm -p 5001:5001 hackathon-flask:latest
