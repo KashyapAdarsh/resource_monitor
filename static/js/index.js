@@ -6,12 +6,16 @@ var startCluster = document.getElementById("startCluster");
 var monitorCluster = document.getElementById("monitorCluster");
 var cleanUpCluster = document.getElementById("cleanUpCluster");
 
+var configModal = document.getElementById('clusterConfig');
+
 // Get the <span> element that closes the modal
 var span = document.getElementsByClassName("close")[0];
 
 // When the user clicks on the button, open the modal 
 startCluster.onclick = function() {
-    modal.style.display = "block";
+    console.log('Start click clicked');
+    console.log(configModal);
+    configModal.style.display = "block";
 }
 monitorCluster.onclick = function() {
     modal.style.display = "block";

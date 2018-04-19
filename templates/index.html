@@ -11,7 +11,7 @@
     <title>Resource Monitor</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css')}}" rel="stylesheet">
 
     <!-- Custom fonts for this template -->
     <link href="{{ url_for('static', filename='vendor/font-awesome/css/font-awesome.min.css')}}" rel="stylesheet" type="text/css">
@@ -20,6 +20,7 @@
 
     <!-- Custom styles for this template -->
     <link href="{{ url_for('static', filename='css/landing-page.css')}}" rel="stylesheet">
+    
 
   </head>
 
@@ -64,7 +65,7 @@
           <div class="col-lg-4">
             <div class="features-icons-item mx-auto mb-5 mb-lg-0 mb-lg-3">
               <div class="features-icons-icon d-flex">
-                <i class="icon-layers m-auto text-primary" id="startCluster"></i>                
+                  <i class="icon-layers m-auto text-primary" id="startCluster"></i>
               </div>
               <h3>Start the Cluster</h3>
               <p class="lead mb-0">Start a cluster of machines running containers.</p>
@@ -103,9 +104,22 @@
         </div>
     </div>
 
+    <div id="clusterConfig" class="modal">
+        <!-- Modal content -->
+        <div class="modal-content">
+          <span class="close">&times;</span>
+          <form action="{{ url_for('start_containers') }}" method="post">
+            <textarea name="clusterConfigArea" cols="40" rows="10"></textarea>
+            <input type = "submit">
+          </form>
+        </div>
+    </div>
+
     <!-- Call to Action -->
-    <section class="call-to-action text-white text-center">
-      <div class="overlay"></div>
+    <section class="logText">
+      <textarea id="liveLogStream">
+
+      </textarea>
     </section>
 
     <!-- Footer -->
@@ -159,5 +173,19 @@
     <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js')}}"></script>
     <script src="{{ url_for('static', filename='js/index.js')}}"></script>
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
+    <script>
+        function test() {
+          var output = document.getElementById('liveLogStream');
+  
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "{{ url_for('stream') }}");
+          xhr.send();
+    
+          setInterval(function() {
+              output.textContent = xhr.responseText;
+          }, 1000);
+        }
+  
+      </script>
   </body>
 </html>
