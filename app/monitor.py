@@ -5,7 +5,7 @@ from threading import Thread
 
 deployment_stats = []
 containermap={"54.183.224.168":["testphoton","testphoton1"]}
-
+cpustat = {}
 
 def diaplay_stats():
 	print deployment_stats
@@ -27,7 +27,21 @@ def get_container_stat(ip, container):
         container_stats = {}
         r = requests.get(staturl, params=payload)
 
+        k=[]
+        k.append(ip)
+        k.append(container)
+        key = ''.join(k)
+
         stat=json.loads(r.text)
+        prev_cpu = []
+        try:
+                prev_cpu = cpustat[key]
+        except KeyError:
+                prev_cpu.append(float(stat["cpu_stats"]["cpu_usage"]["total_usage"]))
+                prev_cpu.append(float(stat["cpu_stats"]["system_cpu_usage"]))
+                cpustat[key] = prev_cpu
+                return
+
         container_stats["ip"] = ip
         container_stats["container_name"] = container
         container_stats["cpu_usage"] = stat["cpu_stats"]["cpu_usage"]["total_usage"]
@@ -48,6 +62,6 @@ def get_stats(containermap):
         for thread in stat_threads:
                 thread.join()
 
-
+get_stats(containermap)
 get_stats(containermap)
 diaplay_stats()
