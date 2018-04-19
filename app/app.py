@@ -3,15 +3,21 @@ from flask import Flask, jsonify, render_template, request
 import docker
 import requests
 import os
+import json
+from threading import Thread
+import logging
+import copy
+from time import sleep
+
 top_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 template_dir = os.path.join(top_dir, 'templates')
 
 static_dir = os.path.join(top_dir, 'static')
 
-
+ip_container=[]
 app = Flask(__name__, static_url_path="", static_folder="../static", template_folder='../templates')
 
-import logging
+cpustat = {}
 
 # logger = logging.getLogger('myapp')
 # hdlr = logging.FileHandler('./myapp.log')
@@ -30,8 +36,12 @@ def start_containers():
     """
     Gets the list of host and container names and starts them
     """
+    global ip_container
     logs = []
     f = request.form['clusterConfigArea'].split('\n')
+    logging.info(f)
+    ip_container=copy.deepcopy(f)
+    logging.info("Value of - " + str(ip_container))
 
     if not f:
         return "Config file not found!!"
@@ -48,7 +58,7 @@ def start_containers():
         # 3. Start the container
 
         #### 1. Create an image
-        image_name = "stress_tester"
+        image_name = "progrium/stress"
         img_url = url + "/images/create?fromImage=" + image_name + "&tag=latest"
         # response = requests.post(img_url)
         okay = True
@@ -61,7 +71,7 @@ def start_containers():
             del_container = url + "/containers/prune"
             response = requests.post(del_container)
             container_url = url + "/containers/create?name=" + container_name
-            response = requests.post(container_url, json= {"Image": image_name})
+            response = requests.post(container_url, json= {"Image": image_name, "Cmd": ["--cpu", "2",  "--io", "1", "--vm", "2",  "--vm-bytes", "256M"]})
             if response.status_code == 201:
                 container_id = response.json()["Id"]                
                 logline = "Created the container with Id- " + container_id
@@ -95,6 +105,87 @@ def stream():
                 # sleep(1)
 
     return app.response_class(generate(), mimetype='text/plain')
+
+def get_staturl(ip, container):
+#        staturl = 'http://54.183.224.168:4243/containers/testphoton/stats'
+	url=[]
+	url.append('http://')
+	url.append(ip)
+	url.append(':4243/containers/')
+	url.append(container)
+	url.append('/stats')
+	staturl= ''.join(url)
+        return staturl
+
+def get_container_stat(ip, container):
+    global cpustat
+    staturl = get_staturl(ip, container)
+    payload = {'stream': 'false'}
+    container_stats = {}
+    r = requests.get(staturl, params=payload)
+
+    k=[]
+    k.append(ip)
+    k.append(container)
+    key = ''.join(k)
+
+    stat=json.loads(r.text)
+    prev_cpu = []
+    try:
+        prev_cpu = cpustat[key]
+    except KeyError:
+        prev_cpu.append(float(stat["cpu_stats"]["cpu_usage"]["total_usage"]))
+        prev_cpu.append(float(stat["cpu_stats"]["system_cpu_usage"]))
+        cpustat[key] = prev_cpu
+        return
+
+    container_stats["ip"] = ip
+    container_stats["container_name"] = container
+    container_stats["cpu_usage"] = (float(stat["cpu_stats"]["cpu_usage"]["total_usage"]-cpustat[key][0])/float(stat["cpu_stats"]["system_cpu_usage"] - cpustat[key][1])) *100
+    container_stats["mem_usage"] = (float(float(stat["memory_stats"]["usage"])/float(stat["memory_stats"]["limit"]))) * 100
+    logging.info(container_stats)
+
+    if (container_stats["cpu_usage"] > 80 or container_stats["mem_usage"] > 35):
+        logging.info("RESOURCE LIMIT EXCEEDED")
+
+@app.route('/monitor', methods = ["GET", "POST"])
+def monitor():
+    global ip_container
+    containermap={}
+    logging.info("Inside monitor")
+    logging.info(ip_container)
+    for line in ip_container:
+        logging.info("Starting with " + str(line))        
+        
+        line.replace("http://", "")
+        res=line.strip().split(" ")
+        container_name = res[1]
+        logging.info("Analyzing the Container " + container_name)
+        
+        res1 = res[0].strip().split(":")[0]
+        containermap[res1] = [container_name]
+    st = 0
+
+    while st < 100:
+        helper(containermap)
+        # sleep(1)
+        st += 1
+    
+    return render_template('index.html')
+
+def helper(containermap):
+    stat_threads=[]
+    for ip in containermap:
+        # print "ip: %s , container: %s" % (ip, containermap[ip])
+        logging.info("Connecting to " + str(ip))
+        
+        for container in containermap[ip]:
+            stat_threads.append( Thread(target=get_container_stat, args=(ip, container)))
+#               get_container_stat(ip, containermap[ip])
+    for thread in stat_threads:
+            thread.start()
+    for thread in stat_threads:
+            thread.join()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename="myapp.log", filemode="a+",
