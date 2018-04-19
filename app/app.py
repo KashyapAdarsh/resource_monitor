@@ -1,13 +1,19 @@
 #!/usr/bin/env python
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 import docker
 import requests
+import os
+top_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+template_dir = os.path.join(top_dir, 'templates')
+
+static_dir = os.path.join(top_dir, 'static')
+
 
 app = Flask(__name__)
 
 @app.route('/')
 def landing():
-    return ''
+    return render_template('index.html')
 
 
 @app.route('/start_containers')
@@ -73,6 +79,16 @@ def start_container():
             logline = "Image creation failed for - " + img_url  + " Response code - " + str(response.json())
             logs.append(logline)            
     return jsonify(logs)
+
+@app.route('/stream')
+def stream():
+    def generate():
+        with open('job.log') as f:
+            while True:
+                yield f.read()
+                sleep(1)
+
+    return app.response_class(generate(), mimetype='text/plain')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
