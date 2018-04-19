@@ -165,5 +165,18 @@
     <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js')}}"></script>
     <script src="{{ url_for('static', filename='js/index.js')}}"></script>
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
+    <!-- <script>
+        setInterval(function() {
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "{{ url_for('stream') }}");
+          xhr.send();
+          var output = document.getElementById('liveLogStream');
+          console.log(xhr)
+          output.value = '';
+          output.value = xhr.responseText;
+          console.log(output);
+        }, 2000);
+    </script> -->
   </body>
 </html>
+

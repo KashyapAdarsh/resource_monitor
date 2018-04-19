@@ -96,15 +96,9 @@ def start_containers():
             logging.info(logline)
     return render_template('index.html')
 
-@app.route('/stream')
+@app.route('/stream', methods=["GET", "POST"])
 def stream():
-    def generate():
-        with open('myapp.log') as f:
-            while True:
-                yield f.read()
-                # sleep(1)
-
-    return app.response_class(generate(), mimetype='text/plain')
+    return jsonify(open("myapp.log").readlines())
 
 def get_staturl(ip, container):
 #        staturl = 'http://54.183.224.168:4243/containers/testphoton/stats'
@@ -166,7 +160,7 @@ def monitor():
         containermap[res1] = [container_name]
     st = 0
 
-    while st < 100:
+    while st < 20:
         helper(containermap)
         # sleep(1)
         st += 1
