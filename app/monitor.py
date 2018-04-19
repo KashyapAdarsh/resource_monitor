@@ -31,7 +31,7 @@ def get_container_stat(ip, container):
         container_stats["ip"] = ip
         container_stats["container_name"] = container
         container_stats["cpu_usage"] = stat["cpu_stats"]["cpu_usage"]["total_usage"]
-        container_stats["mem_usage"] = float(stat["memory_stats"]["usage"]/stat["memory_stats"]["max_usage"])
+	container_stats["mem_usage"] = (float(float(stat["memory_stats"]["usage"])/float(stat["memory_stats"]["limit"]))) * 100
 #        print(container_stats)
         deployment_stats.append(container_stats)
 
