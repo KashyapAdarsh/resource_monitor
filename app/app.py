@@ -8,6 +8,8 @@ from threading import Thread
 import logging
 import copy
 from time import sleep
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 top_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 template_dir = os.path.join(top_dir, 'templates')
@@ -18,6 +20,7 @@ ip_container=[]
 app = Flask(__name__, static_url_path="", static_folder="../static", template_folder='../templates')
 
 cpustat = {}
+containermap={}
 
 # logger = logging.getLogger('myapp')
 # hdlr = logging.FileHandler('./myapp.log')
@@ -141,11 +144,16 @@ def get_container_stat(ip, container):
 
     if (container_stats["cpu_usage"] > 80 or container_stats["mem_usage"] > 35):
         logging.info("RESOURCE LIMIT EXCEEDED")
+        take_action(container_stats["ip"], 0, container_stats["container_name"])
+        logging.info("Stopped container successfully")
+        logging.info("Host : %s, container name : %s", container_stats["ip"], container_stats["container_name"])
+        del containermap[container_stats["ip"]]
 
 @app.route('/monitor', methods = ["GET", "POST"])
 def monitor():
     global ip_container
-    containermap={}
+    global containermap
+    
     logging.info("Inside monitor")
     logging.info(ip_container)
     for line in ip_container:
@@ -160,14 +168,15 @@ def monitor():
         containermap[res1] = [container_name]
     st = 0
 
-    while st < 20:
-        helper(containermap)
+    while st < 10:
+        helper()
         # sleep(1)
         st += 1
     
     return render_template('index.html')
 
-def helper(containermap):
+def helper():
+    global containermap
     stat_threads=[]
     for ip in containermap:
         # print "ip: %s , container: %s" % (ip, containermap[ip])
@@ -180,6 +189,39 @@ def helper(containermap):
             thread.start()
     for thread in stat_threads:
             thread.join()
+
+def take_action(host_id, action_code, container_name):
+	if action_code == 0:
+		stop_url = 'http://' + host_id + ':4243/containers/' + container_name + '/stop'
+		resp = request_retry_session(backoff_factor = 1).post(stop_url)
+		logging.info(resp.status_code)
+		if resp.status_code != 204 and resp.status_code != 304:
+			raise Exception('Unable to stop the container! ' + resp.text)
+	elif action_code == 1:
+		restart_url = 'http://' + host_id + ':4243/containers/' + container_name + '/restart'
+		resp = request_retry_session(backoff_factor = 1).post(restart_url)
+		logging.info(resp.status_code)
+		if resp.status_code != 204:
+			raise Exception('Unable to stop the container! ' + resp.text)
+
+# Create a custom retry session with an exponential backoff strategy
+def request_retry_session(
+	retries=3,
+	backoff_factor=0.3,
+	status_forcelist=(500),
+	session=None):
+	session = session or requests.Session()
+	retry = Retry(
+		total=retries,
+		read=retries,
+		connect=retries,
+		backoff_factor=backoff_factor,
+		status_forcelist=status_forcelist,
+	)
+	adapter = HTTPAdapter(max_retries=retry)
+	session.mount('http://', adapter)
+	session.mount('https://', adapter)
+	return session
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename="myapp.log", filemode="a+",

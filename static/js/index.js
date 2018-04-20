@@ -18,10 +18,15 @@ startCluster.onclick = function() {
     configModal.style.display = "block";
 }
 monitorCluster.onclick = function() {
-    modal.style.display = "block";
+    // modal.style.display = "block";
+    console.log("Inside the onclick");
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "http://0.0.0.0:5001/monitor", true);
+    xhttp.send();
 }
 cleanUpCluster.onclick = function() {
     modal.style.display = "block";
+    modal.innerHTML = "Cleaned Up Hosts.";
 }
 
 // When the user clicks on <span> (x), close the modal

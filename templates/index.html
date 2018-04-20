@@ -66,7 +66,9 @@
           <div class="col-lg-4">
             <div class="features-icons-item mx-auto mb-5 mb-lg-0 mb-lg-3">
               <div class="features-icons-icon d-flex">
-                <i class="icon-screen-desktop m-auto text-primary" id="monitorCluster"></i>
+                <a href="http://0.0.0.0:5001/monitor" class="blah"> 
+                  <i class="icon-screen-desktop m-auto text-primary" id="monitorCluster"></i>  
+                </a>
               </div>
               <h3>Start the Monitor</h3>
               <p class="lead mb-0">Start a stress workload on the cluster and monitor the hosts</p>
@@ -165,18 +167,6 @@
     <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js')}}"></script>
     <script src="{{ url_for('static', filename='js/index.js')}}"></script>
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
-    <!-- <script>
-        setInterval(function() {
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", "{{ url_for('stream') }}");
-          xhr.send();
-          var output = document.getElementById('liveLogStream');
-          console.log(xhr)
-          output.value = '';
-          output.value = xhr.responseText;
-          console.log(output);
-        }, 2000);
-    </script> -->
   </body>
 </html>
 

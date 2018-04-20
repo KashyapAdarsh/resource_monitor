@@ -75,6 +75,10 @@ header.masthead h1 {
 .features-icons .features-icons-item .features-icons-icon {
   height: 7rem;
 }
+.blah {
+  padding-left: 120px;
+  padding-top: 25px;
+}
 
 .features-icons .features-icons-item .features-icons-icon i {
   font-size: 4.5rem;
